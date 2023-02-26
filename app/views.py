@@ -1,6 +1,6 @@
 import os
 from app import app, db, login_manager
-from flask import render_template, request, redirect, url_for, flash, session, abort
+from flask import render_template, request, redirect, url_for, flash, session, abort, send_from_directory
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
@@ -47,7 +47,6 @@ def upload():
 
     return render_template('upload.html', form=form)
 
-
 @app.route('/login', methods=['POST', 'GET'])
 def login():
     form = LoginForm()
@@ -85,6 +84,13 @@ def login():
 def load_user(id):
     return db.session.execute(db.select(UserProfile).filter_by(id=id)).scalar()
 
+def get_uploaded_images():
+    rootdir = os.getcwd()
+    # print rootdir
+    for subdir, dirs, files in os.walk(rootdir + '/uploads'):
+        fileNames = [n for n in files]
+    return fileNames
+
 ###
 # The functions below should be applicable to all Flask apps.
 ###
@@ -97,6 +103,14 @@ def flash_errors(form):
                 getattr(form, field).label.text,
                 error
 ), 'danger')
+
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(),app.config['UPLOAD_FOLDER']), filename)
+
+@app.route("/files")
+def files():
+    return render_template("files.html", images= get_uploaded_images())
 
 @app.route('/<file_name>.txt')
 def send_text_file(file_name):
